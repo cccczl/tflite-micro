@@ -104,15 +104,15 @@ class TestModelGenerator:
 
     # Create op.
     generated_op = copy.deepcopy(op)
-    generated_op.inputs = [i for i in range(len(op.inputs))]
+    generated_op.inputs = list(range(len(op.inputs)))
     generated_op.outputs = [len(op.inputs)]
     generated_op.opcodeIndex = 0
     generated_subgraph.operators = [generated_op]
 
     generated_model.subgraphs = [generated_subgraph]
     generated_model.operatorCodes = [model.operatorCodes[opcode_idx]]
-    model_name = self.output_dir + '/' + self.output_dir.split('/')[-1] + str(
-        self.op_idx) + '.tflite'
+    model_name = (f'{self.output_dir}/' + self.output_dir.split('/')[-1] + str(
+        self.op_idx)) + '.tflite'
     self.op_idx += 1
     flatbuffer_utils.write_model(generated_model, model_name)
     return model_name
@@ -126,13 +126,10 @@ class TestModelGenerator:
   def generate_models(self, subgraph_idx, builtin_operator):
     subgraph = self.model.subgraphs[subgraph_idx]
     opcode_idx = self.get_opcode_idx(builtin_operator)
-    output_models = []
-    for op in subgraph.operators:
-      if op.opcodeIndex == opcode_idx:
-        output_models.append(
-            self.generate_single_layer_model(self.model, subgraph, op,
-                                             opcode_idx))
-    return output_models
+    return [
+        self.generate_single_layer_model(self.model, subgraph, op, opcode_idx)
+        for op in subgraph.operators if op.opcodeIndex == opcode_idx
+    ]
 
 
 class TestDataGenerator:
@@ -267,7 +264,7 @@ class TestDataGenerator:
 
     template_file_path = os.path.join(TEMPLATE_DIR, 'BUILD.mako')
     build_template = template.Template(filename=template_file_path)
-    with open(self.output_dir + '/BUILD', 'w') as file_obj:
+    with open(f'{self.output_dir}/BUILD', 'w') as file_obj:
       key_values_in_template = {
           'targets': targets,
           'inputs': self.inputs,
@@ -289,7 +286,7 @@ class TestDataGenerator:
     template_file_path = os.path.join(TEMPLATE_DIR,
                                       'integration_tests_cc.mako')
     build_template = template.Template(filename=template_file_path)
-    with open(self.output_dir + '/integration_tests.cc', 'w') as file_obj:
+    with open(f'{self.output_dir}/integration_tests.cc', 'w') as file_obj:
       key_values_in_template = {
           'targets': targets,
           'targets_with_path': targets_with_path,
@@ -300,10 +297,10 @@ class TestDataGenerator:
       file_obj.write(build_template.render(**key_values_in_template))
 
   def generate_makefile(self):
-    makefile = open(self.output_dir + '/Makefile.inc', 'w')
+    makefile = open(f'{self.output_dir}/Makefile.inc', 'w')
     output_dir_list = self.output_dir.split('/')
-    src_prefix = output_dir_list[-3] + '_' + output_dir_list[
-        -2] + '_' + output_dir_list[-1]
+    src_prefix = (
+        f'{output_dir_list[-3]}_{output_dir_list[-2]}_{output_dir_list[-1]}')
     makefile.write(src_prefix + '_GENERATOR_INPUTS := \\\n')
     for model_path in self.model_paths:
       makefile.write(
@@ -317,9 +314,8 @@ class TestDataGenerator:
         self.output_dir.split('third_party/tflite_micro/')[-1] +
         '/integration_tests.cc')
     makefile.write('\n\n')
-    makefile.write('$(eval $(call microlite_test,' + src_prefix + '_test,\\\n')
-    makefile.write('$(' + src_prefix + '_SRCS),,$(' + src_prefix +
-                   '_GENERATOR_INPUTS)))')
+    makefile.write(f'$(eval $(call microlite_test,{src_prefix}' + '_test,\\\n')
+    makefile.write(f'$({src_prefix}_SRCS),,$({src_prefix}_GENERATOR_INPUTS)))')
 
 
 def op_info_from_name(name):

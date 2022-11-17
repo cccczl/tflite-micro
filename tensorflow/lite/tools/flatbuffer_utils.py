@@ -83,8 +83,7 @@ def convert_object_to_bytearray(model_object):
   builder = flatbuffers.Builder(1024)
   model_offset = model_object.Pack(builder)
   builder.Finish(model_offset, file_identifier=_TFLITE_FILE_IDENTIFIER)
-  model_bytearray = bytes(builder.Output())
-  return model_bytearray
+  return bytes(builder.Output())
 
 
 def write_model(model_object, output_tflite_file):
@@ -198,7 +197,7 @@ def xxd_output_to_bytes(input_cc_file):
         continue
 
       # Match in the parentheses (hex array only)
-      list_text = values_match.group(1)
+      list_text = values_match[1]
 
       # Extract hex values (text) from the line
       # e.g. 0x1c, 0x00, 0x00, 0x00, 0x54, 0x46, 0x4c,

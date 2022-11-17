@@ -51,7 +51,7 @@ def convert_c_source_to_bytes(input_cc_file):
       if values_match is None:
         continue
 
-      list_text = values_match.group(1)
+      list_text = values_match[1]
       values_text = filter(None, list_text.split(','))
 
       values = [int(x, base=16) for x in values_text]
@@ -208,12 +208,12 @@ def main(argv):
       tflite_input = argv[1]
       tflite_output = argv[1]
   except IndexError:
-    print("Usage: %s <input cc/tflite> <output cc/tflite>" % (argv[0]))
+    print(f"Usage: {argv[0]} <input cc/tflite> <output cc/tflite>")
   else:
     if tflite_input == tflite_output:
       path, filename = os.path.split(tflite_input)
       try:
-        shutil.copyfile(tflite_input, path + '/orig_' + filename)
+        shutil.copyfile(tflite_input, f'{path}/orig_{filename}')
       except OSError as err:
         print('Error while creating backup file:', err)
     if tflite_input.endswith('.cc'):

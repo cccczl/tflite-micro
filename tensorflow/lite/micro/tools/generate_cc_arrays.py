@@ -31,24 +31,20 @@ def generate_file(out_fname, array_name, array_type, array_contents, size):
   """Write an array of values to a CC or header file."""
   os.makedirs(os.path.dirname(out_fname), exist_ok=True)
   if out_fname.endswith('.cc'):
-    out_cc_file = open(out_fname, 'w')
-    out_cc_file.write('#include <cstdint>\n\n')
-    out_cc_file.write('#include "{}"\n\n'.format(
-        out_fname.split('genfiles/')[-1].replace('.cc', '.h')))
-    out_cc_file.write('const unsigned int {}_size = {};'.format(
-        array_name, str(size)))
-    out_cc_file.write('alignas(16) const {} {}[] = {{'.format(
-        array_type, array_name))
-    out_cc_file.write(array_contents)
-    out_cc_file.write('};\n')
-    out_cc_file.close()
+    with open(out_fname, 'w') as out_cc_file:
+      out_cc_file.write('#include <cstdint>\n\n')
+      out_cc_file.write(
+          f"""#include "{out_fname.split('genfiles/')[-1].replace('.cc', '.h')}"\n\n"""
+      )
+      out_cc_file.write(f'const unsigned int {array_name}_size = {str(size)};')
+      out_cc_file.write(f'alignas(16) const {array_type} {array_name}[] = {{')
+      out_cc_file.write(array_contents)
+      out_cc_file.write('};\n')
   elif out_fname.endswith('.h'):
-    out_hdr_file = open(out_fname, 'w')
-    out_hdr_file.write('#include <cstdint>\n\n')
-    out_hdr_file.write('extern const unsigned int {}_size;'.format(array_name))
-    out_hdr_file.write('extern const {} {}[];\n'.format(
-        array_type, array_name))
-    out_hdr_file.close()
+    with open(out_fname, 'w') as out_hdr_file:
+      out_hdr_file.write('#include <cstdint>\n\n')
+      out_hdr_file.write(f'extern const unsigned int {array_name}_size;')
+      out_hdr_file.write(f'extern const {array_type} {array_name}[];\n')
   else:
     raise ValueError('generated file must be end with .cc or .h')
 
@@ -61,16 +57,14 @@ def generate_array(input_fname):
       byte = input_file.read(1)
       size = 0
       while byte:
-        out_string += '0x' + byte.hex() + ','
+        out_string += f'0x{byte.hex()},'
         byte = input_file.read(1)
         size += 1
       return [size, out_string]
   elif input_fname.endswith('.bmp'):
     img = Image.open(input_fname, mode='r')
     image_bytes = img.tobytes()
-    out_string = ''
-    for byte in image_bytes:
-      out_string += hex(byte) + ','
+    out_string = ''.join(f'{hex(byte)},' for byte in image_bytes)
     return [len(image_bytes), out_string]
   elif input_fname.endswith('.wav'):
     wav_file = wave.open(input_fname, mode='r')
@@ -93,17 +87,17 @@ def generate_array(input_fname):
 def get_array_name(input_fname):
   base_array_name = 'g_' + input_fname.split('.')[0].split('/')[-1]
   if input_fname.endswith('.tflite'):
-    return [base_array_name + '_model_data', 'unsigned char']
+    return [f'{base_array_name}_model_data', 'unsigned char']
   elif input_fname.endswith('.bmp'):
-    return [base_array_name + '_image_data', 'unsigned char']
+    return [f'{base_array_name}_image_data', 'unsigned char']
   elif input_fname.endswith('.wav'):
-    return [base_array_name + '_audio_data', 'int16_t']
+    return [f'{base_array_name}_audio_data', 'int16_t']
   elif input_fname.endswith('_int32.csv'):
-    return [base_array_name + '_test_data', 'int32_t']
+    return [f'{base_array_name}_test_data', 'int32_t']
   elif input_fname.endswith('_int16.csv'):
-    return [base_array_name + '_test_data', 'int16_t']
+    return [f'{base_array_name}_test_data', 'int16_t']
   elif input_fname.endswith('_int8.csv'):
-    return [base_array_name + '_test_data', 'int8_t']
+    return [f'{base_array_name}_test_data', 'int8_t']
 
 
 def main():
@@ -130,20 +124,20 @@ def main():
     for input_file in list(dict.fromkeys(args.inputs)):
       output_base_fname = os.path.join(args.output, input_file.split('.')[0])
       if input_file.endswith('.tflite'):
-        output_base_fname = output_base_fname + '_model_data'
+        output_base_fname = f'{output_base_fname}_model_data'
       elif input_file.endswith('.bmp'):
-        output_base_fname = output_base_fname + '_image_data'
+        output_base_fname = f'{output_base_fname}_image_data'
       elif input_file.endswith('.wav'):
-        output_base_fname = output_base_fname + '_audio_data'
+        output_base_fname = f'{output_base_fname}_audio_data'
       elif input_file.endswith('.csv'):
-        output_base_fname = output_base_fname + '_test_data'
+        output_base_fname = f'{output_base_fname}_test_data'
       else:
         raise ValueError('input file must be .tflite, .bmp, .wav or .csv')
 
-      output_cc_fname = output_base_fname + '.cc'
+      output_cc_fname = f'{output_base_fname}.cc'
       # Print output cc filename for Make to include it in the build.
       print(output_cc_fname)
-      output_hdr_fname = output_base_fname + '.h'
+      output_hdr_fname = f'{output_base_fname}.h'
       size, cc_array = generate_array(input_file)
       generated_array_name, array_type = get_array_name(input_file)
       generate_file(output_cc_fname, generated_array_name, array_type,

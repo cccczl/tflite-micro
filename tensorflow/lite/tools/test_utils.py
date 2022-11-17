@@ -234,9 +234,7 @@ def build_mock_flatbuffer_model():
   schema_fb.ModelAddSignatureDefs(builder, signature_defs_offset)
   model_offset = schema_fb.ModelEnd(builder)
   builder.Finish(model_offset)
-  model = builder.Output()
-
-  return model
+  return builder.Output()
 
 
 def load_model_from_flatbuffer(flatbuffer_model):

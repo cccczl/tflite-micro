@@ -22,24 +22,18 @@ def berkeley_size_format_to_dict(berkeley_size_format):
   lines = berkeley_size_format.split('\n')
   labels = lines[0].split()
   values = lines[1].split()
-  outdict = {labels[i]: values[i] for i in range(len(labels) - 2)}
-  return (outdict)
+  return {labels[i]: values[i] for i in range(len(labels) - 2)}
 
 
 def json_to_dict(some_json):
-  outdict = json.loads(some_json)
-  return (outdict)
+  return json.loads(some_json)
 
 
 def file_to_dict(a_file):
   with open(a_file) as the_file:
     contents = the_file.read()
-  if contents[0] == "{":
-    retdict = json_to_dict(contents)
-  else:
-    retdict = berkeley_size_format_to_dict(contents)
-
-  return (retdict)
+  return (json_to_dict(contents)
+          if contents[0] == "{" else berkeley_size_format_to_dict(contents))
 
 
 def compare_val_in_files(old_file, new_file, val='bss'):
@@ -68,14 +62,11 @@ def compare_all_val_in_files(old_file, new_file, error_on_mem_increase):
   for section, val in old_dict.items():
     if int(new_dict[section]) > int(old_dict[section]):
       print(section, " larger than previous value")
-      print("old: ", old_dict[section])
-      print("new: ", new_dict[section])
       any_mem_increase = True
     else:
       print(section)
-      print("old: ", old_dict[section])
-      print("new: ", new_dict[section])
-
+    print("old: ", old_dict[section])
+    print("new: ", new_dict[section])
   if any_mem_increase:
     print("Warning: memory footprint increases!")
     if error_on_mem_increase:

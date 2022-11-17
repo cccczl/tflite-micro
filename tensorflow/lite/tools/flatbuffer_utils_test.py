@@ -220,7 +220,7 @@ class XxdOutputToBytesTest(test_util.TensorFlowTestCase):
     # 3. DUMP WITH xxd
     input_cc_file = os.path.join(tmp_dir, 'model.cc')
 
-    command = 'xxd -i {} > {}'.format(model_filename, input_cc_file)
+    command = f'xxd -i {model_filename} > {input_cc_file}'
     subprocess.call(command, shell=True)
 
     # 4. VALIDATE

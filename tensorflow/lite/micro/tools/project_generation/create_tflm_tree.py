@@ -38,10 +38,7 @@ import subprocess
 
 
 def _get_dirs(file_list):
-  dirs = set()
-  for filepath in file_list:
-    dirs.add(os.path.dirname(filepath))
-  return dirs
+  return {os.path.dirname(filepath) for filepath in file_list}
 
 
 def _get_file_list(key, makefile_options):
@@ -123,8 +120,8 @@ def _get_tflm_generator_path():
 def _create_examples_tree(prefix_dir, examples_list):
   files = []
   for e in examples_list:
-    files.extend(_get_file_list("list_%s_example_sources" % (e), ""))
-    files.extend(_get_file_list("list_%s_example_headers" % (e), ""))
+    files.extend(_get_file_list(f"list_{e}_example_sources", ""))
+    files.extend(_get_file_list(f"list_{e}_example_headers", ""))
 
   # The get_file_list gives path relative to the root of the git repo (where the
   # examples are in tensorflow/lite/micro/examples). However, in the output
@@ -167,13 +164,11 @@ def _create_examples_tree(prefix_dir, examples_list):
   for filepath in dest_file_list:
     with fileinput.FileInput(filepath, inplace=True) as f:
       for line in f:
-        include_match = re.match(
-            r'.*#include.*"' + tflm_examples_path + r'/([^/]+)/.*"', line)
-        if include_match:
+        if include_match := re.match(
+            r'.*#include.*"' + tflm_examples_path + r'/([^/]+)/.*"', line):
           # We need a trailing forward slash because what we care about is
           # replacing the include paths.
-          text_to_replace = os.path.join(tflm_examples_path,
-                                         include_match.group(1)) + "/"
+          text_to_replace = f"{os.path.join(tflm_examples_path, include_match[1])}/"
           line = line.replace(text_to_replace, "")
         # end="" prevents an extra newline from getting added as part of the
         # in-place find and replace.
@@ -185,7 +180,7 @@ def _rename_cc_to_cpp(output_dir):
     for name in files:
       if name.endswith(".cc"):
         base_name_with_path = os.path.join(path, os.path.splitext(name)[0])
-        os.rename(base_name_with_path + ".cc", base_name_with_path + ".cpp")
+        os.rename(f"{base_name_with_path}.cc", f"{base_name_with_path}.cpp")
 
 
 def main():

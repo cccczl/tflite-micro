@@ -204,30 +204,31 @@ _D3_HTML_TEMPLATE = """
 
 def TensorTypeToName(tensor_type):
   """Converts a numerical enum to a readable tensor type."""
-  for name, value in schema_fb.TensorType.__dict__.items():
-    if value == tensor_type:
-      return name
-  return None
+  return next(
+      (name for name, value in schema_fb.TensorType.__dict__.items()
+       if value == tensor_type),
+      None,
+  )
 
 
 def BuiltinCodeToName(code):
   """Converts a builtin op code enum to a readable name."""
-  for name, value in schema_fb.BuiltinOperator.__dict__.items():
-    if value == code:
-      return name
-  return None
+  return next(
+      (name for name, value in schema_fb.BuiltinOperator.__dict__.items()
+       if value == code),
+      None,
+  )
 
 
 def NameListToString(name_list):
   """Converts a list of integers to the equivalent ASCII string."""
   if isinstance(name_list, str):
     return name_list
-  else:
-    result = ""
-    if name_list is not None:
-      for val in name_list:
-        result = result + chr(int(val))
-    return result
+  result = ""
+  if name_list is not None:
+    for val in name_list:
+      result = result + chr(int(val))
+  return result
 
 
 class OpCodeMapper(object):
@@ -241,10 +242,7 @@ class OpCodeMapper(object):
         self.code_to_name[idx] = NameListToString(d["custom_code"])
 
   def __call__(self, x):
-    if x not in self.code_to_name:
-      s = "<UNKNOWN>"
-    else:
-      s = self.code_to_name[x]
+    s = "<UNKNOWN>" if x not in self.code_to_name else self.code_to_name[x]
     return "%s (%d)" % (s, x)
 
 
@@ -252,10 +250,7 @@ class DataSizeMapper(object):
   """For buffers, report the number of bytes."""
 
   def __call__(self, x):
-    if x is not None:
-      return "%d bytes" % len(x)
-    else:
-      return "--"
+    return "%d bytes" % len(x) if x is not None else "--"
 
 
 class TensorMapper(object):
@@ -272,7 +267,7 @@ class TensorMapper(object):
     html += "<span class='tooltip'><span class='tooltipcontent'>"
     for i in x:
       tensor = self.data["tensors"][i]
-      html += str(i) + " "
+      html += f"{str(i)} "
       html += NameListToString(tensor["name"]) + " "
       html += TensorTypeToName(tensor["type"]) + " "
       html += (repr(tensor["shape"]) if "shape" in tensor else "[]")
@@ -358,14 +353,12 @@ def GenerateTableHtml(items, keys_to_print, display_index=True):
   Returns:
     An html table.
   """
-  html = ""
-  # Print the list of  items
-  html += "<table><tr>\n"
+  html = "" + "<table><tr>\n"
   html += "<tr>\n"
   if display_index:
     html += "<th>index</th>"
   for h, mapper in keys_to_print:
-    html += "<th>%s</th>" % h
+    html += f"<th>{h}</th>"
   html += "</tr>\n"
   for idx, tensor in enumerate(items):
     html += "<tr>\n"
@@ -401,7 +394,7 @@ def FlatbufferToDict(fb, preserve_as_numpy):
   Returns:
     A dictionary representing the flatbuffer rather than a flatbuffer object.
   """
-  if isinstance(fb, int) or isinstance(fb, float) or isinstance(fb, str):
+  if isinstance(fb, (int, float, str)):
     return fb
   elif hasattr(fb, "__dict__"):
     result = {}
@@ -536,7 +529,7 @@ def main(argv):
     tflite_input = argv[1]
     html_output = argv[2]
   except IndexError:
-    print("Usage: %s <input tflite> <output html>" % (argv[0]))
+    print(f"Usage: {argv[0]} <input tflite> <output html>")
   else:
     html = create_html(tflite_input)
     with open(html_output, "w") as output_file:
